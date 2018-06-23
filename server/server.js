@@ -1,52 +1,49 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const { ObjectID } = require('mongodb');
 
 const { mongoose } = require('./db/mongoose');
-const { Todo } = require('./db/models/todo');
-const { User } = require('./db/models/user');
+const { Todo, User } = require('./db/models');
 
 const app = express();
 app.use(bodyParser.json());
 
-app.post('/todos', (req, res) => {
+app.post('/todos', async (req, res) => {
 	const todo = new Todo({
 		text: req.body.text
 	});
-	todo.save().then(
-		(doc) => {
-			res.send(doc);
-		},
-		(e) => {
-			res.status(400).send(e);
-		}
-	);
+	try {
+		const document = await todo.save();
+		res.send(document);
+	} catch (e) {
+		res.status(400).send(e);
+	}
 });
-app.get('/todos', (req, res) => {
-	const todos = Todo.find({}).then(
-		(todos) => res.send({ todos }),
-		(e) => {
-			res.status(400).send(e);
+app.get('/todos', async (req, res) => {
+	try {
+		const todos = await Todo.find({});
+		res.send({ todos });
+	} catch (err) {
+		res.status(400).send(err);
+	}
+});
+app.get('/todos/:id', async (req, res) => {
+	try {
+		const { id } = req.params;
+		if (!ObjectID.isValid(id)) {
+			console.log('not valid');
+			return res.status(404).send();
 		}
-	);
+		const todo = await Todo.findById(id);
+		if (!todo) {
+			return res.status(404).send();
+		}
+		res.send({ todo });
+	} catch (e) {
+		res.status(400).send(e);
+	}
 });
 
 app.listen(3000, () => {
 	console.log('Started on port 3000');
 });
-
-// const user = new User({ email: ' ololo@gmail.com ' });
-// user.save().then(
-// 	(doc) => {
-// 		console.log('Saved new  user ', doc);
-// 	},
-// 	(err) => {
-// 		console.log('Unable to save todo');
-// 	}
-// );
-// const newTodo = new Todo({ text: 'Cook dinner' });
-// newTodo.save().then(
-// 	(doc) => {
-// 		console.log('Saved todo', doc);
-// 	},
-// 	(err) => console.log('Unable to save todo')
-// );
