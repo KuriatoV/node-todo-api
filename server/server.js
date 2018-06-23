@@ -33,10 +33,26 @@ app.get('/todos/:id', async (req, res) => {
 	try {
 		const { id } = req.params;
 		if (!ObjectID.isValid(id)) {
-			console.log('not valid');
+			console.log('Not valid id');
 			return res.status(404).send();
 		}
 		const todo = await Todo.findById(id);
+		if (!todo) {
+			return res.status(404).send();
+		}
+		res.send({ todo });
+	} catch (e) {
+		res.status(400).send(e);
+	}
+});
+app.delete('/todos/:id', async (req, res) => {
+	try {
+		const { id } = req.params;
+		if (!ObjectID.isValid(id)) {
+			console.log('Not valid id');
+			return res.status(404).send();
+		}
+		const todo = await Todo.findByIdAndRemove(id);
 		if (!todo) {
 			return res.status(404).send();
 		}
