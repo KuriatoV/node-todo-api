@@ -59,10 +59,7 @@ UserSchema.statics.findByToken = async function(token) {
 	let decoded;
 	try {
 		decoded = await jwt.verify(token, 'abc123');
-	} catch (e) {
-		return Promise.reject();
-	}
-	try {
+
 		const user = await User.findOne({
 			_id: decoded._id,
 			'tokens.token': token,
