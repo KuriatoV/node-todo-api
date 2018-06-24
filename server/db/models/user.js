@@ -42,6 +42,18 @@ UserSchema.methods.generateAuthToken = async function() {
 	await user.save();
 	return token;
 };
+UserSchema.methods.removeToken = async function(token) {
+	const user = this;
+	console.log('here =====');
+	try {
+		const result = await user.update({ $pull: { tokens: { token } } });
+		console.log('result', result);
+
+		return result;
+	} catch (e) {
+		return Promise.reject();
+	}
+};
 UserSchema.statics.findByToken = async function(token) {
 	const User = this;
 	let decoded;
@@ -50,22 +62,38 @@ UserSchema.statics.findByToken = async function(token) {
 	} catch (e) {
 		return Promise.reject();
 	}
+	try {
+		const user = await User.findOne({
+			_id: decoded._id,
+			'tokens.token': token,
+			'tokens.access': 'auth'
+		});
+		return user;
+	} catch (e) {
+		return Promise.reject();
+	}
+};
 
-	return await User.findOne({
-		_id: decoded._id,
-		'tokens.token': token,
-		'tokens.access': 'auth'
-	});
+UserSchema.statics.findByCredentials = async function({ email, password }) {
+	const User = this;
+	let user;
+	try {
+		user = await User.findOne({ email });
+		if (user) {
+			if (bcrypt.compare(password, user.password)) {
+				return user;
+			}
+		}
+	} catch (e) {
+		Promise.reject();
+	}
 };
 
 UserSchema.pre('save', function(next) {
 	const user = this;
-	console.log('user', user);
 	if (user.isModified('password')) {
-		console.log('user is modified', user);
 		bcrypt.genSalt(10, (err, salt) => {
 			bcrypt.hash(user.password, salt, (err, hashedPassword) => {
-				console.log('hashedPassword', hashedPassword);
 				user.password = hashedPassword;
 				next();
 			});
